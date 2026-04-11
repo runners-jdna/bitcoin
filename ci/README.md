@@ -88,7 +88,8 @@ To configure the primary repository, follow these steps:
 3. Enable organisation-level runners to be used in public repositories:
    1. `Org settings -> Actions -> Runner Groups -> Default -> Allow public repos`
 4. Enable caching on the Namespace runner profiles used by CI.
-5. Permit the following actions to run:
+5. In the cache volume advanced settings, restrict cache updates to the default branch if you want pull requests to read caches without persisting cache changes.
+6. Permit the following actions to run:
    1. actions/cache/restore@\*
    1. actions/cache/save@\*
    1. docker/setup-buildx-action@\*
