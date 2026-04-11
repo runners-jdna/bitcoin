@@ -19,23 +19,23 @@ concurrency:
 
 env:
   CI_FAILFAST_TEST_LEAVE_DANGLING: 1  # GHA does not care about dangling processes and setting this variable avoids killing the CI script itself on error
-  CIRRUS_CACHE_HOST: http://127.0.0.1:12321/ # When using Cirrus Runners this host can be used by the docker `gha` build cache type.
-  REPO_USE_CIRRUS_RUNNERS: 'bitcoin/bitcoin' # Use cirrus runners and cache for this repo, instead of falling back to the slow GHA runners
+  WARP_CACHE_HOST: http://127.0.0.1:12321/ # When using Warp Runners this host can be used by the docker `gha` build cache type.
+  REPO_USE_WARP_RUNNERS: 'bitcoin/bitcoin' # Use warp runners for this repo
 
 jobs:
   runners:
     name: 'determine runners'
     runs-on: ubuntu-latest
     outputs:
-      use-cirrus-runners: ${{ steps.runners.outputs.use-cirrus-runners }}
+      provider: ${{ steps.runners.outputs.provider }}
     steps:
       - id: runners
         run: |
-          if [[ "${REPO_USE_CIRRUS_RUNNERS}" == "${{ github.repository }}" ]]; then
-            echo "use-cirrus-runners=true" >> "$GITHUB_OUTPUT"
-            echo "::notice title=Runner Selection::Using Cirrus Runners"
+          if [[ "${REPO_USE_WARP_RUNNERS}" == "${{ github.repository }}" ]]; then
+            echo "provider=warp" >> "$GITHUB_OUTPUT"
+            echo "::notice title=Runner Selection::Using Warp Runners"
           else
-            echo "use-cirrus-runners=false" >> "$GITHUB_OUTPUT"
+            echo "provider=gha" >> "$GITHUB_OUTPUT"
             echo "::notice title=Runner Selection::Using GitHub-hosted runners"
           fi
 
@@ -292,7 +292,7 @@ jobs:
   ci-matrix:
     name: ${{ matrix.name }}
     needs: runners
-    runs-on: ${{ needs.runners.outputs.use-cirrus-runners == 'true' && matrix.cirrus-runner || matrix.fallback-runner }}
+    runs-on: ${{ needs.runners.outputs.provider == 'warp' && matrix.cirrus-runner || matrix.fallback-runner }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: ${{ matrix.timeout-minutes }}
 
@@ -389,7 +389,7 @@ jobs:
       - name: Configure Docker
         uses: ./.github/actions/configure-docker
         with:
-          use-cirrus: ${{ needs.runners.outputs.use-cirrus-runners }}
+          provider: ${{ needs.runners.outputs.provider }}
 
       - name: Enable bpfcc script
         if: ${{ env.CONTAINER_NAME == 'ci_native_asan' }}
@@ -411,7 +411,7 @@ jobs:
   lint:
     name: 'lint'
     needs: runners
-    runs-on: ${{ needs.runners.outputs.use-cirrus-runners == 'true' && 'warp-ubuntu-2404-x64-2x' || 'ubuntu-24.04' }}
+    runs-on: ${{ needs.runners.outputs.provider == 'warp' && 'warp-ubuntu-2404-x64-2x' || 'ubuntu-24.04' }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: 20
     env:
@@ -426,7 +426,7 @@ jobs:
       - name: Configure Docker
         uses: ./.github/actions/configure-docker
         with:
-          use-cirrus: ${{ needs.runners.outputs.use-cirrus-runners }}
+          provider: ${{ needs.runners.outputs.provider }}
 
       - name: CI script
         run: |
