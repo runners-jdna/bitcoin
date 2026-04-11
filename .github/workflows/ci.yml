@@ -331,7 +331,7 @@ jobs:
   windows-cross:
     name: 'Windows-cross to x86_64, ${{ matrix.crt }}'
     needs: [runners, record-frozen-commit]
-    runs-on: ${{ needs.runners.outputs.provider == 'namespace' && 'namespace-profile-x64-linux-small' || 'ubuntu-24.04' }}
+    runs-on: ${{ needs.runners.outputs.provider == 'namespace' && format('namespace-profile-x64-linux-small;overrides.cache-tag={0}', matrix.cache-tag) || 'ubuntu-24.04' }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
 
     strategy:
@@ -340,9 +340,11 @@ jobs:
         crt: [msvcrt, ucrt]
         include:
           - crt: msvcrt
+            cache-tag: 'bitcoin-ci-windows-cross-msvcrt'
             file-env: './ci/test/00_setup_env_win64_msvcrt.sh'
             artifact-name: 'x86_64-w64-mingw32-executables'
           - crt: ucrt
+            cache-tag: 'bitcoin-ci-windows-cross-ucrt'
             file-env: './ci/test/00_setup_env_win64.sh'
             artifact-name: 'x86_64-w64-mingw32ucrt-executables'
 
@@ -368,9 +370,15 @@ jobs:
       - name: Configure environment
         uses: ./.github/actions/configure-environment
 
-      - name: Restore caches
-        id: restore-cache
-        uses: ./.github/actions/restore-caches
+      - name: Mount Namespace cache volumes
+        if: needs.runners.outputs.provider == 'namespace'
+        uses: namespacelabs/nscloud-cache-action@v1
+        with:
+          path: |
+            ${{ env.CCACHE_DIR }}
+            ${{ env.SOURCES_PATH }}
+            ${{ env.BASE_CACHE }}
+            ${{ env.PREVIOUS_RELEASES_DIR }}
 
       - name: Configure Docker
         uses: ./.github/actions/configure-docker
@@ -379,9 +387,6 @@ jobs:
 
       - name: CI script
         run: ./ci/test_run_all.sh
-
-      - name: Save caches
-        uses: ./.github/actions/save-caches
 
       - name: Upload built executables
         uses: actions/upload-artifact@v7
@@ -449,7 +454,7 @@ jobs:
   ci-matrix:
     name: ${{ matrix.name }}
     needs: runners
-    runs-on: ${{ matrix.namespace-runner && needs.runners.outputs.provider == 'namespace' && matrix.namespace-runner || matrix.fallback-runner }}
+    runs-on: ${{ matrix.namespace-runner && needs.runners.outputs.provider == 'namespace' && format('{0};overrides.cache-tag={1}', matrix.namespace-runner, matrix.cache-tag) || matrix.fallback-runner }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: ${{ matrix.timeout-minutes }}
 
@@ -462,6 +467,7 @@ jobs:
       matrix:
         include:
           - name: 'iwyu'
+            cache-tag: 'bitcoin-ci-iwyu'
             namespace-runner: 'namespace-profile-x64-linux-medium'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
@@ -475,78 +481,91 @@ jobs:
             file-env: './ci/test/00_setup_env_arm.sh'
 
           # - name: 'ASan + LSan + UBSan + integer'
+          #   cache-tag: 'bitcoin-ci-asan'
           #   namespace-runner: 'namespace-profile-x64-linux-medium'
           #   fallback-runner: 'ubuntu-24.04'
           #   timeout-minutes: 120
           #   file-env: './ci/test/00_setup_env_native_asan.sh'
 
           - name: 'macOS-cross to arm64'
+            cache-tag: 'bitcoin-ci-macos-cross-arm64'
             namespace-runner: 'namespace-profile-x64-linux-small'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_mac_cross.sh'
 
           - name: 'macOS-cross to x86_64'
+            cache-tag: 'bitcoin-ci-macos-cross-x86-64'
             namespace-runner: 'namespace-profile-x64-linux-small'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_mac_cross_intel.sh'
 
           - name: 'FreeBSD Cross'
+            cache-tag: 'bitcoin-ci-freebsd-cross'
             namespace-runner: 'namespace-profile-x64-linux-medium'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_freebsd_cross.sh'
 
           - name: 'No wallet'
+            cache-tag: 'bitcoin-ci-no-wallet'
             namespace-runner: 'namespace-profile-x64-linux-small'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_nowallet.sh'
 
           - name: 'i686, no IPC'
+            cache-tag: 'bitcoin-ci-i686-no-ipc'
             namespace-runner: 'namespace-profile-x64-linux-medium'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_i686_no_ipc.sh'
 
           - name: 'fuzzer,address,undefined,integer'
+            cache-tag: 'bitcoin-ci-fuzz-asan-ubsan-integer'
             namespace-runner: 'namespace-profile-x64-linux-large'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 240
             file-env: './ci/test/00_setup_env_native_fuzz.sh'
 
           - name: 'previous releases'
+            cache-tag: 'bitcoin-ci-previous-releases'
             namespace-runner: 'namespace-profile-x64-linux-medium'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_previous_releases.sh'
 
           - name: 'Alpine (musl)'
+            cache-tag: 'bitcoin-ci-alpine-musl'
             namespace-runner: 'namespace-profile-x64-linux-medium'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_alpine_musl.sh'
 
           - name: 'tidy'
+            cache-tag: 'bitcoin-ci-tidy'
             namespace-runner: 'namespace-profile-x64-linux-medium'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_tidy.sh'
 
           - name: 'TSan'
+            cache-tag: 'bitcoin-ci-tsan'
             namespace-runner: 'namespace-profile-x64-linux-medium'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_tsan.sh'
 
           - name: 'MSan, fuzz'
+            cache-tag: 'bitcoin-ci-msan-fuzz'
             namespace-runner: 'namespace-profile-x64-linux-medium'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 150
             file-env: './ci/test/00_setup_env_native_fuzz_with_msan.sh'
 
           - name: 'MSan'
+            cache-tag: 'bitcoin-ci-msan'
             namespace-runner: 'namespace-profile-x64-linux-large'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
@@ -570,14 +589,20 @@ jobs:
       - name: Configure environment
         uses: ./.github/actions/configure-environment
 
-      - name: Restore caches
-        id: restore-cache
-        uses: ./.github/actions/restore-caches
+      - name: Mount Namespace cache volumes
+        if: matrix.namespace-runner && needs.runners.outputs.provider == 'namespace'
+        uses: namespacelabs/nscloud-cache-action@v1
+        with:
+          path: |
+            ${{ env.CCACHE_DIR }}
+            ${{ env.SOURCES_PATH }}
+            ${{ env.BASE_CACHE }}
+            ${{ env.PREVIOUS_RELEASES_DIR }}
 
       - name: Configure Docker
         uses: ./.github/actions/configure-docker
         with:
-          provider: ${{ matrix.provider || needs.runners.outputs.provider }}
+          provider: ${{ matrix.namespace-runner && needs.runners.outputs.provider == 'namespace' && 'namespace' || 'gha' }}
 
       - name: Clear unnecessary files
         if: ${{ needs.runners.outputs.provider == 'gha' && true || false }} # Only needed on GHA runners
@@ -596,9 +621,6 @@ jobs:
 
       - name: CI script
         run: ./ci/test_run_all.sh
-
-      - name: Save caches
-        uses: ./.github/actions/save-caches
 
   lint:
     name: 'lint'
