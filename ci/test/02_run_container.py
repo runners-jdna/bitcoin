@@ -31,8 +31,10 @@ def main():
     # Add "hidden" settings, which are never exported, manually. Otherwise,
     # they will not be passed on.
     settings.update([
+        "BASE_CACHE",
         "BASE_BUILD_DIR",
         "CI_FAILFAST_TEST_LEAVE_DANGLING",
+        "SOURCES_PATH",
     ])
 
     # Append $USER to /tmp/env to support multi-user systems and $CONTAINER_NAME
@@ -62,7 +64,8 @@ def main():
         CI_IMAGE_LABEL = "bitcoin-ci-test"
 
         # Use buildx unconditionally
-        # Using buildx is required to properly load the correct driver, for use with registry caching. Neither build, nor BUILDKIT=1 currently do this properly
+        # Namespace jobs configure buildx in the workflow, while GitHub-hosted
+        # jobs pass explicit Actions cache flags via DOCKER_BUILD_CACHE_ARG.
         cmd_build = ["docker", "buildx", "build"]
         cmd_build += [
             f"--file={os.environ['BASE_READ_ONLY_DIR']}/ci/test_imagefile",
@@ -82,31 +85,31 @@ def main():
             time.sleep(3)
             run(cmd_build)
 
-        for suffix in ["ccache", "depends", "depends_sources", "previous_releases"]:
-            run(["docker", "volume", "create", f"{os.environ['CONTAINER_NAME']}_{suffix}"], check=False)
-
-        CI_CCACHE_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_ccache,dst={os.environ['CCACHE_DIR']}"
-        CI_DEPENDS_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_depends,dst={os.environ['DEPENDS_DIR']}/built"
-        CI_DEPENDS_SOURCES_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_depends_sources,dst={os.environ['DEPENDS_DIR']}/sources"
-        CI_PREVIOUS_RELEASES_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_previous_releases,dst={os.environ['PREVIOUS_RELEASES_DIR']}"
-        CI_BUILD_MOUNT = []
-
         if os.getenv("DANGER_CI_ON_HOST_FOLDERS"):
             # ensure the directories exist
             for create_dir in [
                     os.environ["CCACHE_DIR"],
-                    f"{os.environ['DEPENDS_DIR']}/built",
-                    f"{os.environ['DEPENDS_DIR']}/sources",
+                    os.environ["BASE_CACHE"],
+                    os.environ["SOURCES_PATH"],
                     os.environ["PREVIOUS_RELEASES_DIR"],
                     os.environ["BASE_BUILD_DIR"],  # Unset by default, must be defined externally
             ]:
                 Path(create_dir).mkdir(parents=True, exist_ok=True)
 
             CI_CCACHE_MOUNT = f"type=bind,src={os.environ['CCACHE_DIR']},dst={os.environ['CCACHE_DIR']}"
-            CI_DEPENDS_MOUNT = f"type=bind,src={os.environ['DEPENDS_DIR']}/built,dst={os.environ['DEPENDS_DIR']}/built"
-            CI_DEPENDS_SOURCES_MOUNT = f"type=bind,src={os.environ['DEPENDS_DIR']}/sources,dst={os.environ['DEPENDS_DIR']}/sources"
+            CI_DEPENDS_MOUNT = f"type=bind,src={os.environ['BASE_CACHE']},dst={os.environ['BASE_CACHE']}"
+            CI_DEPENDS_SOURCES_MOUNT = f"type=bind,src={os.environ['SOURCES_PATH']},dst={os.environ['SOURCES_PATH']}"
             CI_PREVIOUS_RELEASES_MOUNT = f"type=bind,src={os.environ['PREVIOUS_RELEASES_DIR']},dst={os.environ['PREVIOUS_RELEASES_DIR']}"
             CI_BUILD_MOUNT = [f"--mount=type=bind,src={os.environ['BASE_BUILD_DIR']},dst={os.environ['BASE_BUILD_DIR']}"]
+        else:
+            for suffix in ["ccache", "depends", "depends_sources", "previous_releases"]:
+                run(["docker", "volume", "create", f"{os.environ['CONTAINER_NAME']}_{suffix}"], check=False)
+
+            CI_CCACHE_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_ccache,dst={os.environ['CCACHE_DIR']}"
+            CI_DEPENDS_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_depends,dst={os.environ['BASE_CACHE']}"
+            CI_DEPENDS_SOURCES_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_depends_sources,dst={os.environ['SOURCES_PATH']}"
+            CI_PREVIOUS_RELEASES_MOUNT = f"type=volume,src={os.environ['CONTAINER_NAME']}_previous_releases,dst={os.environ['PREVIOUS_RELEASES_DIR']}"
+            CI_BUILD_MOUNT = []
 
         if os.getenv("DANGER_CI_ON_HOST_CCACHE_FOLDER"):
             if not os.path.isdir(os.environ["CCACHE_DIR"]):

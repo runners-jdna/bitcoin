@@ -6,22 +6,37 @@ runs:
     - name: Set CI and cache directories
       shell: bash
       run: |
-        echo "BASE_ROOT_DIR=${{ runner.temp }}" >> "$GITHUB_ENV"
-        echo "BASE_BUILD_DIR=${{ runner.temp }}/build" >> "$GITHUB_ENV"
-        echo "CCACHE_DIR=${{ runner.temp }}/ccache_dir" >> $GITHUB_ENV
-        echo "DEPENDS_DIR=${{ runner.temp }}/depends" >> "$GITHUB_ENV"
-        echo "BASE_CACHE=${{ runner.temp }}/depends/built" >> $GITHUB_ENV
-        echo "SOURCES_PATH=${{ runner.temp }}/depends/sources" >> $GITHUB_ENV
-        echo "PREVIOUS_RELEASES_DIR=${{ runner.temp }}/previous_releases" >> $GITHUB_ENV
+        source "$FILE_ENV"
+        depends_hash="$(git ls-tree HEAD depends "$FILE_ENV" | sha256sum | cut -d' ' -f1)"
+        previous_releases_hash="$(git ls-tree HEAD test/get_previous_releases.py | sha256sum | cut -d' ' -f1)"
 
-    - name: Set cache hashes
-      shell: bash
-      run: |
-        echo "DEPENDS_HASH=$(git ls-tree HEAD depends "$FILE_ENV" | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
-        echo "PREVIOUS_RELEASES_HASH=$(git ls-tree HEAD test/get_previous_releases.py | sha256sum | cut -d' ' -f1)" >> $GITHUB_ENV
+        base_root_dir="${{ runner.temp }}"
+        base_build_dir="${{ runner.temp }}/build"
+        depends_dir="${{ runner.temp }}/depends"
 
-    - name: Get container name
-      shell: bash
-      run: |
-        source $FILE_ENV
-        echo "CONTAINER_NAME=$CONTAINER_NAME" >> "$GITHUB_ENV"
+        if [[ -n "${NSC_CONTAINER_REGISTRY:-}" ]]; then
+          cache_root="${HOME}/.cache/bitcoin-ci/${CONTAINER_NAME}"
+          ccache_dir="${cache_root}/ccache_dir"
+          base_cache="${cache_root}/depends/built/${depends_hash}"
+          sources_path="${cache_root}/depends/sources/${depends_hash}"
+          previous_releases_dir="${cache_root}/previous_releases/${previous_releases_hash}"
+          mkdir -p "$ccache_dir" "$base_cache" "$sources_path" "$previous_releases_dir"
+        else
+          ccache_dir="${{ runner.temp }}/ccache_dir"
+          base_cache="${{ runner.temp }}/depends/built"
+          sources_path="${{ runner.temp }}/depends/sources"
+          previous_releases_dir="${{ runner.temp }}/previous_releases"
+        fi
+
+        {
+          echo "CONTAINER_NAME=$CONTAINER_NAME"
+          echo "DEPENDS_HASH=$depends_hash"
+          echo "PREVIOUS_RELEASES_HASH=$previous_releases_hash"
+          echo "BASE_ROOT_DIR=$base_root_dir"
+          echo "BASE_BUILD_DIR=$base_build_dir"
+          echo "CCACHE_DIR=$ccache_dir"
+          echo "DEPENDS_DIR=$depends_dir"
+          echo "BASE_CACHE=$base_cache"
+          echo "SOURCES_PATH=$sources_path"
+          echo "PREVIOUS_RELEASES_DIR=$previous_releases_dir"
+        } >> "$GITHUB_ENV"
