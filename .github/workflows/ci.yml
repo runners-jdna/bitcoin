@@ -605,7 +605,7 @@ jobs:
           provider: ${{ matrix.namespace-runner && needs.runners.outputs.provider == 'namespace' && 'namespace' || 'gha' }}
 
       - name: Clear unnecessary files
-        if: ${{ needs.runners.outputs.provider == 'gha' && true || false }} # Only needed on GHA runners
+        if: ${{ !(matrix.namespace-runner && needs.runners.outputs.provider == 'namespace') }}
         uses: ./.github/actions/clear-files
 
       - name: Enable bpfcc script
