@@ -48,7 +48,7 @@ jobs:
       - id: runners
         run: |
           if [[ "${REPO_USE_CIRRUS_RUNNERS}" == "${{ github.repository }}" ]]; then
-            echo "provider=cirrus" >> "$GITHUB_OUTPUT"
+            echo "provider=warp" >> "$GITHUB_OUTPUT"
             echo "::notice title=Runner Selection::Using Cirrus Runners"
           else
             echo "provider=gha" >> "$GITHUB_OUTPUT"
@@ -58,7 +58,7 @@ jobs:
   test-each-commit:
     name: 'test ancestor commits'
     needs: runners
-    runs-on: ${{ needs.runners.outputs.provider == 'cirrus' && 'warp-ubuntu-2404-x64-8x' || 'ubuntu-24.04' }}
+    runs-on: ${{ needs.runners.outputs.provider == 'warp' && 'warp-ubuntu-2404-x64-8x' || 'ubuntu-24.04' }}
     env:
       TEST_RUNNER_PORT_MIN: "14000"  # Use a larger port, to avoid colliding with CIRRUS_CACHE_HOST port 12321.
     if: github.event_name == 'pull_request' && github.event.pull_request.commits != 1
@@ -325,7 +325,7 @@ jobs:
   windows-cross:
     name: 'Windows-cross to x86_64, ${{ matrix.crt }}'
     needs: [runners, record-frozen-commit]
-    runs-on: ${{ needs.runners.outputs.provider == 'cirrus' && 'warp-ubuntu-2404-x64-4x' || 'ubuntu-24.04' }}
+    runs-on: ${{ needs.runners.outputs.provider == 'warp' && 'warp-ubuntu-2404-x64-4x' || 'ubuntu-24.04' }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
 
     strategy:
@@ -362,7 +362,7 @@ jobs:
       - name: Configure Docker
         uses: ./.github/actions/configure-docker
         with:
-          cache-provider: ${{ needs.runners.outputs.provider }}
+          provider: ${{ needs.runners.outputs.provider }}
 
       - name: CI script
         run: ./ci/test_run_all.sh
@@ -436,7 +436,7 @@ jobs:
   ci-matrix:
     name: ${{ matrix.name }}
     needs: runners
-    runs-on: ${{ needs.runners.outputs.provider == 'cirrus' && matrix.cirrus-runner || matrix.fallback-runner }}
+    runs-on: ${{ needs.runners.outputs.provider == 'warp' && matrix.cirrus-runner || matrix.fallback-runner }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: ${{ matrix.timeout-minutes }}
 
@@ -554,7 +554,7 @@ jobs:
       - name: Configure Docker
         uses: ./.github/actions/configure-docker
         with:
-          cache-provider: ${{ matrix.provider || needs.runners.outputs.provider }}
+          provider: ${{ matrix.provider || needs.runners.outputs.provider }}
 
       - name: Clear unnecessary files
         if: ${{ needs.runners.outputs.provider == 'gha' && true || false }} # Only needed on GHA runners
@@ -580,7 +580,7 @@ jobs:
   lint:
     name: 'lint'
     needs: runners
-    runs-on: ${{ needs.runners.outputs.provider == 'cirrus' && 'warp-ubuntu-2404-x64-2x' || 'ubuntu-24.04' }}
+    runs-on: ${{ needs.runners.outputs.provider == 'warp' && 'warp-ubuntu-2404-x64-2x' || 'ubuntu-24.04' }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: 20
     env:
@@ -597,7 +597,7 @@ jobs:
       - name: Configure Docker
         uses: ./.github/actions/configure-docker
         with:
-          cache-provider: ${{ needs.runners.outputs.provider }}
+          provider: ${{ needs.runners.outputs.provider }}
 
       - name: CI script
         run: |
