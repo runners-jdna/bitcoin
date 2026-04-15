@@ -15,6 +15,30 @@ import random
 import subprocess
 import sys
 
+# Longest-running targets should go first, to help running tests in parallel.
+PRIORITIZED_TARGETS = [
+    'ephemeral_package_eval',
+    'tx_package_eval',
+    'addrman_serdeser',
+    'coins_view_db',
+    'mocked_descriptor_parse',
+    'package_rbf',
+    'utxo_total_supply',
+    'descriptor_parse',
+    'scriptpubkeyman',
+    'tx_pool_standard',
+    'txorphan',
+    'tx_pool',
+    'addrman',
+    'wallet_create_transaction',
+    'txdownloadman_impl',
+    'process_messages',
+    'transaction',
+    'txorphan_protected',
+    'script_sign',
+    'txdownloadman',
+]
+
 
 def get_fuzz_env(*, target, source_dir):
     symbolizer = os.environ.get('LLVM_SYMBOLIZER_PATH', "/usr/bin/llvm-symbolizer")
@@ -132,7 +156,7 @@ def main():
                 logging.error("Target \"{}\" not found in current target list.".format(excluded_target))
                 continue
             test_list_selection.remove(excluded_target)
-    test_list_selection.sort()
+    test_list_selection = prioritize_test_list(test_list_selection)
 
     logging.info("{} of {} detected fuzz target(s) selected: {}".format(len(test_list_selection), len(test_list_all), " ".join(test_list_selection)))
 
@@ -237,6 +261,11 @@ def transform_rpc_target(targets, src_dir):
         assert len(lines)
         targets += [(rpc_target, {"LIMIT_TO_RPC_COMMAND": r}) for r in lines]
     return targets
+
+
+def prioritize_test_list(test_list):
+    priority = {target: i for i, target in enumerate(PRIORITIZED_TARGETS)}
+    return sorted(test_list, key=lambda target: (target not in priority, priority.get(target, len(PRIORITIZED_TARGETS)), target))
 
 
 def generate_corpus(*, fuzz_pool, src_dir, fuzz_bin, corpus_dir, targets):
