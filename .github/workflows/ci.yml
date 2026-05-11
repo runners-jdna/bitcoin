@@ -311,67 +311,67 @@ jobs:
             file-env: './ci/test/00_setup_env_arm.sh'
 
           - name: 'win64 Cross'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-sm'
+            cirrus-runner: 'warp-ubuntu-2404-x64-4x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_win64.sh'
 
           - name: 'ASan + LSan + UBSan + integer, no depends, USDT'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-md' # has to match container in ci/test/00_setup_env_native_asan.sh for tracing tools
+            cirrus-runner: 'warp-ubuntu-2404-x64-8x' # has to match container in ci/test/00_setup_env_native_asan.sh for tracing tools
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_asan.sh'
 
           - name: 'macOS-cross, gui, no tests'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-sm'
+            cirrus-runner: 'warp-ubuntu-2404-x64-4x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_mac_cross.sh'
 
           - name: 'No wallet, libbitcoinkernel'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-sm'
+            cirrus-runner: 'warp-ubuntu-2404-x64-4x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_nowallet_libbitcoinkernel.sh'
 
           - name: 'i686, multiprocess, DEBUG'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-md'
+            cirrus-runner: 'warp-ubuntu-2404-x64-8x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_i686_multiprocess.sh'
 
           - name: 'fuzzer,address,undefined,integer, no depends'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-lg'
+            cirrus-runner: 'warp-ubuntu-2404-x64-16x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 240
             file-env: './ci/test/00_setup_env_native_fuzz.sh'
 
           - name: 'previous releases, depends DEBUG'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-md'
+            cirrus-runner: 'warp-ubuntu-2404-x64-8x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_previous_releases.sh'
 
           - name: 'CentOS, depends, gui'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-lg'
+            cirrus-runner: 'warp-ubuntu-2404-x64-16x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_centos.sh'
 
           - name: 'tidy'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-md'
+            cirrus-runner: 'warp-ubuntu-2404-x64-8x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_tidy.sh'
 
           - name: 'TSan, depends, no gui'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-md'
+            cirrus-runner: 'warp-ubuntu-2404-x64-8x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_tsan.sh'
 
           - name: 'MSan, depends'
-            cirrus-runner: 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-lg'
+            cirrus-runner: 'warp-ubuntu-2404-x64-16x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_msan.sh'
@@ -411,7 +411,7 @@ jobs:
   lint:
     name: 'lint'
     needs: runners
-    runs-on: ${{ needs.runners.outputs.use-cirrus-runners == 'true' && 'ghcr.io/cirruslabs/ubuntu-runner-amd64:24.04-xs' || 'ubuntu-24.04' }}
+    runs-on: ${{ needs.runners.outputs.use-cirrus-runners == 'true' && 'warp-ubuntu-2404-x64-2x' || 'ubuntu-24.04' }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: 20
     env:
