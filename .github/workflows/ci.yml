@@ -292,7 +292,7 @@ jobs:
   ci-matrix:
     name: ${{ matrix.name }}
     needs: runners
-    runs-on: ${{ needs.runners.outputs.provider == 'warp' && matrix.cirrus-runner || matrix.fallback-runner }}
+    runs-on: ${{ needs.runners.outputs.provider == 'warp' && matrix.warp-runner || matrix.fallback-runner }}
     if: ${{ vars.SKIP_BRANCH_PUSH != 'true' || github.event_name == 'pull_request' }}
     timeout-minutes: ${{ matrix.timeout-minutes }}
 
@@ -305,73 +305,73 @@ jobs:
       matrix:
         include:
           - name: '32 bit ARM, unit tests, no functional tests'
-            cirrus-runner: 'ubuntu-24.04-arm' # Cirrus' Arm runners are Apple (with virtual Linux aarch64), which doesn't support 32-bit mode
+            warp-runner: 'ubuntu-24.04-arm' # Warp' Arm runners are Apple (with virtual Linux aarch64), which doesn't support 32-bit mode
             fallback-runner: 'ubuntu-24.04-arm'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_arm.sh'
 
           - name: 'win64 Cross'
-            cirrus-runner: 'warp-ubuntu-2404-x64-4x'
+            warp-runner: 'warp-ubuntu-2404-x64-4x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_win64.sh'
 
           - name: 'ASan + LSan + UBSan + integer, no depends, USDT'
-            cirrus-runner: 'warp-ubuntu-2404-x64-8x' # has to match container in ci/test/00_setup_env_native_asan.sh for tracing tools
+            warp-runner: 'warp-ubuntu-2404-x64-8x' # has to match container in ci/test/00_setup_env_native_asan.sh for tracing tools
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_asan.sh'
 
           - name: 'macOS-cross, gui, no tests'
-            cirrus-runner: 'warp-ubuntu-2404-x64-4x'
+            warp-runner: 'warp-ubuntu-2404-x64-4x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_mac_cross.sh'
 
           - name: 'No wallet, libbitcoinkernel'
-            cirrus-runner: 'warp-ubuntu-2404-x64-4x'
+            warp-runner: 'warp-ubuntu-2404-x64-4x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_nowallet_libbitcoinkernel.sh'
 
           - name: 'i686, multiprocess, DEBUG'
-            cirrus-runner: 'warp-ubuntu-2404-x64-8x'
+            warp-runner: 'warp-ubuntu-2404-x64-8x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_i686_multiprocess.sh'
 
           - name: 'fuzzer,address,undefined,integer, no depends'
-            cirrus-runner: 'warp-ubuntu-2404-x64-16x'
+            warp-runner: 'warp-ubuntu-2404-x64-16x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 240
             file-env: './ci/test/00_setup_env_native_fuzz.sh'
 
           - name: 'previous releases, depends DEBUG'
-            cirrus-runner: 'warp-ubuntu-2404-x64-8x'
+            warp-runner: 'warp-ubuntu-2404-x64-8x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_previous_releases.sh'
 
           - name: 'CentOS, depends, gui'
-            cirrus-runner: 'warp-ubuntu-2404-x64-16x'
+            warp-runner: 'warp-ubuntu-2404-x64-16x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_centos.sh'
 
           - name: 'tidy'
-            cirrus-runner: 'warp-ubuntu-2404-x64-8x'
+            warp-runner: 'warp-ubuntu-2404-x64-8x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_tidy.sh'
 
           - name: 'TSan, depends, no gui'
-            cirrus-runner: 'warp-ubuntu-2404-x64-8x'
+            warp-runner: 'warp-ubuntu-2404-x64-8x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_tsan.sh'
 
           - name: 'MSan, depends'
-            cirrus-runner: 'warp-ubuntu-2404-x64-16x'
+            warp-runner: 'warp-ubuntu-2404-x64-16x'
             fallback-runner: 'ubuntu-24.04'
             timeout-minutes: 120
             file-env: './ci/test/00_setup_env_native_msan.sh'
