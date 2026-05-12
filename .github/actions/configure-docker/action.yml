@@ -37,7 +37,7 @@ runs:
 
         # gha or warp cache provider host
         if [[ ${{ inputs.provider }} == 'warp' ]]; then
-          url_args="url=${WARP_CACHE_HOST},url_v2=${WARP_CACHE_HOST}"
+          url_args="url=${WARP_CACHE_HOST},version=1"
         else
           url_args=""
         fi
