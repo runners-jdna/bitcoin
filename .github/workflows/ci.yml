@@ -164,7 +164,7 @@ jobs:
           FILE_ENV: ${{ matrix.file-env }}
 
       - name: Save Ccache cache
-        uses: actions/cache/save@v5
+        uses: willcl-ark/cache/save@v5
         if: github.event_name != 'pull_request' && steps.ccache-cache.outputs.cache-hit != 'true'
         with:
           path: ${{ env.CCACHE_DIR }}
@@ -232,7 +232,7 @@ jobs:
           key: ${{ github.job }}-vcpkg-tools
 
       - name: Restore vcpkg binary cache
-        uses: actions/cache/restore@v5
+        uses: willcl-ark/cache/restore@v5
         id: vcpkg-binary-cache
         with:
           path: ~/AppData/Local/vcpkg/archives
@@ -243,7 +243,7 @@ jobs:
           cmake -B build --preset vs2022-static -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT\scripts\buildsystems\vcpkg.cmake" ${{ matrix.generate-options }}
 
       - name: Save vcpkg binary cache
-        uses: actions/cache/save@v5
+        uses: willcl-ark/cache/save@v5
         if: github.event_name != 'pull_request' && steps.vcpkg-binary-cache.outputs.cache-hit != 'true' && matrix.job-type == 'standard'
         with:
           path: ~/AppData/Local/vcpkg/archives
